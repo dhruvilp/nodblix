@@ -1,16 +1,55 @@
-# nodblix
+# Nodblix
 
-A new Flutter project.
+### Contributers and Contact Information:
 
-## Getting Started
+1. Mudra Patel (Github @mudrap): Graduate student in Pharmacy
+2. Dhruvil Patel (Github @dhruvilp): Full-stack software engineer
 
-This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
+### Problem Statement Addressed: 
+    4. Find Novel Drug Treatments
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Description: 
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Explain what your project is trying to accomplish and how you utilized graph technology to achieve those goals. 
+Describe how your submission is relevant to the problem statement and why it is impactful to the world. Remember to link your submission video here. 
+
+Tell us how your entry was the most...					
+
+- Impactful in solving a real world problem 
+- Innovative use case of graph
+- Ambitious and complex graph
+- Applicable graph solution 
+
+Other additions: 
+
+ - **Data**: Give context for the dataset used and give full access to judges if publicly available or metadata otherwise. 
+ - **Technology Stack**: Describe technologies and programming languages used. 
+ - **Visuals**: Feel free to include other images or videos to better demonstrate your work.
+ - Link websites or applications if needed to demonstrate your work. 
+
+## Dependencies
+
+State any dependencies and their versions needed to be installed to test this project. This may include programming languages, frameworks, libraries, and etc. 
+
+## Installation
+
+Please give detailed instructions on installing, configuring, and running the project so judges can fully replicate and assess it. 
+
+This can include:
+1. Clone repository
+2. Install dependencies
+3. Access data
+4. Steps to build/run project
+
+## Known Issues and Future Improvements
+
+Explain known liminations within the project and potential next steps. 
+
+## Reflections
+
+Review the steps you took to create this project and the resources you were provided. Feel free to indiciate room for improvement and general reflections.
+
+## References
+
+Dataset credit: CDC Clinical Trial Results online - https://clinicaltrials.gov/ct2/results
