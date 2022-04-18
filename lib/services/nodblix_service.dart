@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -7,10 +8,9 @@ import 'package:http/http.dart' as http;
 var client = http.Client();
 final kHeader = {
   'Content-Type': 'application/json',
-  // 'Access-Control-Allow-Origin': '*',
-  // 'Access-Control-Allow-Credentials': 'true',
-  // "Access-Control-Allow-Headers": "*",
-  // "Access-Control-Allow-Methods": "HEAD,POST,GET,DELETE,PUT,OPTIONS"
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Credentials': 'true',
+  "Access-Control-Allow-Headers": "*"
 };
 
 final kAppUrl = dotenv.env['APP_URL'];
@@ -81,7 +81,7 @@ class NodblixService {
     await HttpService.getJson<Map<String, dynamic>>('/echo', kHeader)
         .then((response) {
       respMsg = !response!['error'] ? response : null;
-    }).whenComplete(() => print('Fetching echo done!.... [$respMsg]'));
+    }).whenComplete(() => print('Fetching echo done!....'));
     return respMsg;
   }
 
@@ -89,51 +89,26 @@ class NodblixService {
     Map<String, dynamic>? wikiInfo;
     await HttpService.getWikiJson<Map<String, dynamic>>(title).then((response) {
       wikiInfo = response!['batchcomplete'] ? response : null;
-    }).whenComplete(() => print('Fetching wiki info done!.... [$wikiInfo]'));
+    }).whenComplete(() => print('Fetching wiki info done!....'));
     return wikiInfo;
   }
 
   // HttpHeaders.authorizationHeader: 'Basic your_api_token_here'
   static Future<Map<String, dynamic>?> fetchRequestToken() async {
-    Map<String, dynamic>? wikiInfo;
-    await HttpService.postJson<Map<String, dynamic>>('/requesttoken', {
-      'Content-Type': 'application/json'
-    }, {
+    Map<String, dynamic>? tokenResp;
+    await HttpService.postJson<Map<String, dynamic>>('/requesttoken', kHeader, {
       "secret": kTokenSecret,
       "graph": kGraphName,
       "lifetime": kTokenLifetime
     }).then((response) {
-      wikiInfo = !response!['error'] ? response : null;
-    }).whenComplete(
-        () => print('Fetching request token done!.... [$wikiInfo]'));
-    return wikiInfo;
+      tokenResp = !response!['error'] ? response : null;
+    }).whenComplete(() => print('Fetching request token done!....'));
+    return tokenResp;
   }
 }
 
 //========================
 
-Future<http.Response> getNodblix(String endpoint) async {
-  return await client
-      .get(Uri.parse('$kAppUrl$endpoint'), headers: kHeader)
-      .timeout(const Duration(seconds: 30));
-}
-
-Future<http.Response> postNodblix(String endpoint, dynamic kBody) async {
-  var encodedBody = jsonEncode(kBody);
-  var response = await client
-      .post(Uri.parse('$kAppUrl$endpoint'), headers: kHeader, body: encodedBody)
-      .timeout(const Duration(seconds: 30));
-  return jsonDecode(response.body);
-}
-
-Future<dynamic> echo() async {
-  print('got here 2');
-  var response = await getNodblix('/echo');
-  return json.decode(response.body);
-}
-
 void main() {
-  print('got here');
-  var echoResp = echo();
-  print('echoResp: $echoResp');
+  print('try something here');
 }

@@ -13,9 +13,12 @@ dependencies:
 
   cupertino_icons: ^1.0.2
   flutter_dotenv: ^5.0.2
+  font_awesome_flutter: ^10.1.0
   http: ^0.13.4
   provider: ^6.0.2
   shared_preferences: ^2.0.13
+  url_launcher: ^6.0.20
+  url_strategy: ^0.2.0
 
 dev_dependencies:
   flutter_test:
@@ -30,7 +33,9 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - .env
-  #   - images/a_dot_ham.jpeg
+    - assets/app_logo_transparent.png
+    - assets/by_drug.png
+    - assets/by_condition.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
