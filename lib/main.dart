@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:nodblix/services/nodblix_service.dart';
 
 Future main() async {
   await dotenv.load(fileName: ".env");
@@ -31,12 +32,33 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  var _echoMsg = '';
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  Future<void> _getEcho() async {
+    try {
+      Map<String, dynamic>? echoMsgResp = await NodblixService.fetchEcho();
+      if (echoMsgResp!.isNotEmpty) {
+        setState(() {
+          _echoMsg = echoMsgResp['message'];
+        });
+      }
+    } catch (e) {
+      print('==== echo error from ui: $e');
+    }
+  }
+
+  Future<void> _getRequestToken() async {
+    try {
+      Map<String, dynamic>? reqTokenResp =
+          await NodblixService.fetchRequestToken();
+      if (reqTokenResp!.isNotEmpty) {
+        setState(() {
+          _echoMsg = reqTokenResp['token'];
+        });
+      }
+    } catch (e) {
+      print('==== echo error from ui: $e');
+    }
   }
 
   @override
@@ -49,20 +71,17 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
             Text(
-              '$_counter',
+              'Graph echo msg: $_echoMsg',
               style: Theme.of(context).textTheme.headline4,
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed: _getRequestToken,
+        tooltip: 'Echo',
+        child: const Icon(Icons.webhook_sharp),
       ),
     );
   }

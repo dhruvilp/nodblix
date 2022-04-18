@@ -1,0 +1,139 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+
+var client = http.Client();
+final kHeader = {
+  'Content-Type': 'application/json',
+  // 'Access-Control-Allow-Origin': '*',
+  // 'Access-Control-Allow-Credentials': 'true',
+  // "Access-Control-Allow-Headers": "*",
+  // "Access-Control-Allow-Methods": "HEAD,POST,GET,DELETE,PUT,OPTIONS"
+};
+
+final kAppUrl = dotenv.env['APP_URL'];
+final kPort = dotenv.env['PORT'];
+final kProtocol = dotenv.env['PROTOCOL'];
+final kGraphName = dotenv.env['GRAPH_NAME'];
+final kTokenLifetime = dotenv.env['TOKEN_LIFETIME'];
+final kPortGui = dotenv.env['PORT_GUI'];
+final kTokenSecret = dotenv.env['TOKEN_SECRET'];
+
+class HttpService {
+  static Future<T?> getJson<T>(String kPath, Map<String, String> kHeaders) {
+    return http
+        .get(
+            Uri(
+                scheme: kProtocol,
+                host: kAppUrl,
+                port: int.parse(kPort!),
+                path: kPath),
+            headers: kHeaders)
+        .then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as T;
+      }
+      print('Status code from getJson: ${response.statusCode}...');
+      return null;
+    }).catchError((err) => print('Error from getJson: $err'));
+  }
+
+  static Future<T?> getWikiJson<T>(String title) {
+    return http
+        .get(Uri.parse(
+            'https://en.wikipedia.org/w/api.php?action=query&formatversion=2&prop=pageimages%7Cpageterms%7Cextracts&titles=$title&format=json&explaintext=&exchars=1000'))
+        .then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as T;
+      }
+      print('Status code from getWikiJson: ${response.statusCode}...');
+      return null;
+    }).catchError((err) => print('Error from getWikiJson: $err'));
+  }
+
+  static Future<T?> postJson<T>(
+      String kPath, Map<String, String> kHeaders, dynamic reqBody) {
+    var encodedReqBody = jsonEncode(reqBody);
+    return http
+        .post(
+            Uri(
+                scheme: kProtocol,
+                host: kAppUrl,
+                port: int.parse(kPort!),
+                path: kPath),
+            headers: kHeaders,
+            body: encodedReqBody)
+        .then((response) {
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as T;
+      }
+      print('Status code from postJson: ${response.statusCode}...');
+      return null;
+    }).catchError((err) => print('Error from getJson: $err'));
+  }
+}
+
+class NodblixService {
+  static Future<Map<String, dynamic>?> fetchEcho() async {
+    Map<String, dynamic>? respMsg;
+    await HttpService.getJson<Map<String, dynamic>>('/echo', kHeader)
+        .then((response) {
+      respMsg = !response!['error'] ? response : null;
+    }).whenComplete(() => print('Fetching echo done!.... [$respMsg]'));
+    return respMsg;
+  }
+
+  static Future<Map<String, dynamic>?> fetchWikiData(String title) async {
+    Map<String, dynamic>? wikiInfo;
+    await HttpService.getWikiJson<Map<String, dynamic>>(title).then((response) {
+      wikiInfo = response!['batchcomplete'] ? response : null;
+    }).whenComplete(() => print('Fetching wiki info done!.... [$wikiInfo]'));
+    return wikiInfo;
+  }
+
+  // HttpHeaders.authorizationHeader: 'Basic your_api_token_here'
+  static Future<Map<String, dynamic>?> fetchRequestToken() async {
+    Map<String, dynamic>? wikiInfo;
+    await HttpService.postJson<Map<String, dynamic>>('/requesttoken', {
+      'Content-Type': 'application/json'
+    }, {
+      "secret": kTokenSecret,
+      "graph": kGraphName,
+      "lifetime": kTokenLifetime
+    }).then((response) {
+      wikiInfo = !response!['error'] ? response : null;
+    }).whenComplete(
+        () => print('Fetching request token done!.... [$wikiInfo]'));
+    return wikiInfo;
+  }
+}
+
+//========================
+
+Future<http.Response> getNodblix(String endpoint) async {
+  return await client
+      .get(Uri.parse('$kAppUrl$endpoint'), headers: kHeader)
+      .timeout(const Duration(seconds: 30));
+}
+
+Future<http.Response> postNodblix(String endpoint, dynamic kBody) async {
+  var encodedBody = jsonEncode(kBody);
+  var response = await client
+      .post(Uri.parse('$kAppUrl$endpoint'), headers: kHeader, body: encodedBody)
+      .timeout(const Duration(seconds: 30));
+  return jsonDecode(response.body);
+}
+
+Future<dynamic> echo() async {
+  print('got here 2');
+  var response = await getNodblix('/echo');
+  return json.decode(response.body);
+}
+
+void main() {
+  print('got here');
+  var echoResp = echo();
+  print('echoResp: $echoResp');
+}
