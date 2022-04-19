@@ -116,7 +116,7 @@ class _LandingPageState extends State<LandingPage> {
                     cardHeader: 'Explore by Trial & More',
                     cardDescription:
                         'Discover patterns of how each trials were conducted and associated results',
-                    imagePath: '',
+                    imagePath: 'by_trial.png',
                   ),
                 ],
               ),

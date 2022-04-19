@@ -5,17 +5,17 @@ import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
+import '../defaults.dart';
+
 var client = http.Client();
 final kHeader = {
   'Content-Type': 'application/json',
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Credentials': 'true',
-  "Access-Control-Allow-Headers": "*"
+  'X-Requested-With': 'XMLHttpRequest'
+  // 'Access-Control-Allow-Origin': '*',
+  // 'Access-Control-Allow-Credentials': 'true',
+  // "Access-Control-Allow-Headers": "*"
 };
 
-final kAppUrl = dotenv.env['APP_URL'];
-final kPort = dotenv.env['PORT'];
-final kProtocol = dotenv.env['PROTOCOL'];
 final kGraphName = dotenv.env['GRAPH_NAME'];
 final kTokenLifetime = dotenv.env['TOKEN_LIFETIME'];
 final kPortGui = dotenv.env['PORT_GUI'];
@@ -24,13 +24,7 @@ final kTokenSecret = dotenv.env['TOKEN_SECRET'];
 class HttpService {
   static Future<T?> getJson<T>(String kPath, Map<String, String> kHeaders) {
     return http
-        .get(
-            Uri(
-                scheme: kProtocol,
-                host: kAppUrl,
-                port: int.parse(kPort!),
-                path: kPath),
-            headers: kHeaders)
+        .get(Uri.parse('$CORS_PROXY$GRAPH_API_URL$kPath'), headers: kHeaders)
         .then((response) {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as T;
@@ -57,14 +51,8 @@ class HttpService {
       String kPath, Map<String, String> kHeaders, dynamic reqBody) {
     var encodedReqBody = jsonEncode(reqBody);
     return http
-        .post(
-            Uri(
-                scheme: kProtocol,
-                host: kAppUrl,
-                port: int.parse(kPort!),
-                path: kPath),
-            headers: kHeaders,
-            body: encodedReqBody)
+        .post(Uri.parse('$CORS_PROXY$GRAPH_API_URL$kPath'),
+            headers: kHeaders, body: encodedReqBody)
         .then((response) {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as T;
