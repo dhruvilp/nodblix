@@ -1,8 +1,10 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:nodblix/defaults.dart';
-import 'package:nodblix/pages/nodblix_playground.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../styles.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({Key? key}) : super(key: key);
@@ -16,6 +18,10 @@ class _LandingPageState extends State<LandingPage> {
 
   void _launchNodblixSourcePage() async {
     if (!await launch(GITHUB_URL)) throw 'Could not launch $GITHUB_URL';
+  }
+
+  void _launchProxyServerPage() async {
+    if (!await launch(PROXY_SERVER)) throw 'Could not launch $PROXY_SERVER';
   }
 
   @override
@@ -32,7 +38,7 @@ class _LandingPageState extends State<LandingPage> {
             onPressed: _launchNodblixSourcePage,
             splashRadius: 20.0,
             tooltip: 'Nodblix Source',
-            hoverColor: Theme.of(context).primaryColor,
+            hoverColor: NodblixStyles.primaryColor,
             icon: const Icon(FontAwesomeIcons.github),
           ),
           const SizedBox(width: 5.0),
@@ -41,6 +47,7 @@ class _LandingPageState extends State<LandingPage> {
       body: Padding(
         padding: const EdgeInsets.all(15.0),
         child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
               Center(
@@ -59,27 +66,49 @@ class _LandingPageState extends State<LandingPage> {
                 ),
               ),
               const SizedBox(height: 45.0),
+              SizedBox(
+                width: 600.0,
+                child: SelectableText.rich(
+                  TextSpan(
+                    style: const TextStyle(color: NodblixStyles.primaryColor),
+                    text: 'Go to ',
+                    children: <TextSpan>[
+                      TextSpan(
+                          text: 'https://cors-anywhere.herokuapp.com/corsdemo',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            backgroundColor: NodblixStyles.primaryColor,
+                            color: Colors.grey[900],
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              _launchProxyServerPage();
+                            }),
+                      const TextSpan(
+                        text: ' and click ',
+                      ),
+                      const TextSpan(
+                        text: ' Request temporary access to the demo server ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const TextSpan(
+                        text:
+                            ' button to make this app work. Now, click `Explore Nodblix` to view data in the playground.',
+                      ),
+                    ],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 25.0),
               ElevatedButton.icon(
                 onPressed: () async {
                   await Navigator.of(context).pushNamed('/playground');
                 },
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(
-                    Theme.of(context).primaryColor,
-                  ),
-                  padding: MaterialStateProperty.all(
-                    const EdgeInsets.symmetric(
-                      vertical: 20.0,
-                      horizontal: 30.0,
-                    ),
-                  ),
-                  shape: MaterialStateProperty.all(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.0),
-                    ),
-                  ),
-                  elevation: MaterialStateProperty.all(6.5),
-                ),
+                style: NodblixStyles.buttonStyle,
                 icon: Icon(
                   FontAwesomeIcons.diagramProject,
                   color: Colors.grey[800],
@@ -165,7 +194,7 @@ class FeatureCard extends StatelessWidget {
                   cardDescription,
                   style:
                       Theme.of(context).primaryTextTheme.titleSmall!.copyWith(
-                            color: Theme.of(context).primaryColor,
+                            color: NodblixStyles.primaryColor,
                           ),
                   textAlign: TextAlign.center,
                 ),

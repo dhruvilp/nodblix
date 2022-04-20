@@ -4,6 +4,7 @@
         "cupertino",
         "dotenv",
         "Nodblix",
+        "prefs",
         "requesttoken"
     ]
 }

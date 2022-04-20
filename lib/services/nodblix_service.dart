@@ -11,13 +11,8 @@ var client = http.Client();
 final kHeader = {
   'Content-Type': 'application/json',
   'X-Requested-With': 'XMLHttpRequest'
-  // 'Access-Control-Allow-Origin': '*',
-  // 'Access-Control-Allow-Credentials': 'true',
-  // "Access-Control-Allow-Headers": "*"
 };
 
-final kGraphName = dotenv.env['GRAPH_NAME'];
-final kTokenLifetime = dotenv.env['TOKEN_LIFETIME'];
 final kPortGui = dotenv.env['PORT_GUI'];
 final kTokenSecret = dotenv.env['TOKEN_SECRET'];
 
@@ -81,17 +76,33 @@ class NodblixService {
     return wikiInfo;
   }
 
-  // HttpHeaders.authorizationHeader: 'Basic your_api_token_here'
+  // HttpHeaders.authorizationHeader: 'Bearer API_TOKEN'
   static Future<Map<String, dynamic>?> fetchRequestToken() async {
     Map<String, dynamic>? tokenResp;
     await HttpService.postJson<Map<String, dynamic>>('/requesttoken', kHeader, {
       "secret": kTokenSecret,
-      "graph": kGraphName,
-      "lifetime": kTokenLifetime
+      "graph": GRAPH_NAME,
+      "lifetime": TOKEN_LIFETIME
     }).then((response) {
       tokenResp = !response!['error'] ? response : null;
     }).whenComplete(() => print('Fetching request token done!....'));
     return tokenResp;
+  }
+
+  static Future<Map<String, dynamic>?> fetchVerticesByCondition(
+      String condition, String token) async {
+    Map<String, dynamic>? respMsg;
+    await HttpService.getJson<Map<String, dynamic>>(
+      '/graph/$GRAPH_NAME/edges/condition/$condition/associated_with_a/compound_a',
+      {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+      },
+    ).then((response) {
+      respMsg = !response!['error'] ? response : null;
+    }).whenComplete(() => print('Fetching vertices by condition is done!....'));
+    return respMsg;
   }
 }
 

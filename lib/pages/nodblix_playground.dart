@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:nodblix/services/nodblix_service.dart';
 
+import '../services/storage_manager.dart';
+import '../widgets/playground_view.dart';
+
 class NodblixPlayground extends StatefulWidget {
   const NodblixPlayground({Key? key}) : super(key: key);
 
@@ -24,24 +27,12 @@ class _NodblixPlaygroundState extends State<NodblixPlayground> {
     }
   }
 
-  Future<void> _getRequestToken() async {
-    try {
-      Map<String, dynamic>? reqTokenResp =
-          await NodblixService.fetchRequestToken();
-      if (reqTokenResp!.isNotEmpty) {
-        setState(() {
-          _echoMsg = reqTokenResp['token'];
-        });
-      }
-    } catch (e) {
-      print('==== echo error from ui: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -56,17 +47,7 @@ class _NodblixPlaygroundState extends State<NodblixPlayground> {
           ],
         ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'Graph echo msg: $_echoMsg',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
+      body: const PlaygroundView(),
       floatingActionButton: FloatingActionButton(
         onPressed: _getEcho,
         tooltip: 'Echo',
