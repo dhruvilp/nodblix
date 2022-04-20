@@ -19,9 +19,15 @@ class _PlaygroundViewState extends State<PlaygroundView> {
   int _selectedIndex = 0;
   late TextEditingController _textController;
   bool _hasToken = false;
+  bool _hasError = false;
   bool _isFetchingToken = false;
+  bool _isLoading = false;
+  bool _isLoadingWikiData = false;
+  bool _customTileExpanded = false;
   var fetchReqTokenErrorMsg = '';
-  var edgesPerCondition = List.empty(growable: true);
+  var wikiDataErrMsg = '';
+  var edgesPerConditionOrCompound = List.empty(growable: true);
+  late Map<String, dynamic> wikiRespData = {};
 
   @override
   void initState() {
@@ -42,10 +48,15 @@ class _PlaygroundViewState extends State<PlaygroundView> {
         });
         await persistRequestToken(
             reqTokenResp['token'], reqTokenResp['expiration']);
+      } else {
+        setState(() {
+          _hasError = true;
+        });
       }
     } catch (e) {
       debugPrint('==== echo error from ui: $e');
       setState(() {
+        _hasError = true;
         fetchReqTokenErrorMsg = e.toString();
       });
     }
@@ -54,22 +65,29 @@ class _PlaygroundViewState extends State<PlaygroundView> {
   //==== fetch edges by a condition
   Future<void> _fetchEdgesByCondition(String condition) async {
     try {
+      edgesPerConditionOrCompound.clear();
       var token = await getRequestToken();
       if (token!.isNotEmpty) {
-        Map<String, dynamic>? reqResp =
-            await NodblixService.fetchVerticesByCondition(
-                condition.toLowerCase(), token);
-        if (reqResp!.isNotEmpty) {
+        List<dynamic> reqResp = await NodblixService.fetchVerticesByCondition(
+            condition.toLowerCase(), token);
+        if (reqResp.isNotEmpty) {
           setState(() {
-            edgesPerCondition.addAll(reqResp['results']);
+            edgesPerConditionOrCompound.addAll(reqResp);
+            _isLoading = false;
           });
           // debugPrint('==== resp: ${reqResp['results'][8]['to_id']}');
+        } else {
+          setState(() {
+            _isLoading = false;
+            fetchReqTokenErrorMsg = 'Sorry, no data found';
+          });
         }
       }
     } catch (e) {
       debugPrint('==== echo error from ui - get edges conditions - : $e');
       setState(() {
-        fetchReqTokenErrorMsg = e.toString();
+        _isLoading = false;
+        fetchReqTokenErrorMsg = 'Sorry, no data found!';
       });
     }
   }
@@ -77,22 +95,56 @@ class _PlaygroundViewState extends State<PlaygroundView> {
   //==== fetch edges by a compound
   Future<void> _fetchEdgesByCompound(String compound) async {
     try {
+      edgesPerConditionOrCompound.clear();
       var token = await getRequestToken();
       if (token!.isNotEmpty) {
-        Map<String, dynamic>? reqResp =
-            await NodblixService.fetchVerticesByCompound(
-                compound.toLowerCase(), token);
-        if (reqResp!.isNotEmpty) {
+        List<dynamic> reqResp = await NodblixService.fetchVerticesByCompound(
+            compound.toLowerCase(), token);
+        if (reqResp.isNotEmpty) {
           setState(() {
-            edgesPerCondition.addAll(reqResp['results']);
+            edgesPerConditionOrCompound.addAll(reqResp);
           });
-          // debugPrint('==== resp: ${reqResp['results'][8]['to_id']}');
+          _isLoading = false;
+        } else {
+          setState(() {
+            _isLoading = false;
+            fetchReqTokenErrorMsg = 'Sorry, no data found';
+          });
         }
       }
     } catch (e) {
       debugPrint('==== echo error from ui - get edges compounds - : $e');
       setState(() {
-        fetchReqTokenErrorMsg = e.toString();
+        _isLoading = false;
+        fetchReqTokenErrorMsg = 'Sorry, no data found!';
+      });
+    }
+  }
+
+  //==== fetch wiki data
+  Future<void> _fetchWikiData(String searchWord) async {
+    try {
+      if (searchWord.isNotEmpty) {
+        Map<String, dynamic>? reqResp =
+            await NodblixService.fetchWikiData(searchWord);
+        if (reqResp!['missing'] == null) {
+          print('==== !! $reqResp');
+          setState(() {
+            wikiRespData = reqResp;
+            _isLoadingWikiData = false;
+          });
+        } else {
+          setState(() {
+            _isLoadingWikiData = false;
+            wikiDataErrMsg = 'Sorry, no data found';
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('==== echo error from ui - get wiki data - : $e');
+      setState(() {
+        _isLoadingWikiData = false;
+        wikiDataErrMsg = 'Sorry, no data found!';
       });
     }
   }
@@ -116,34 +168,113 @@ class _PlaygroundViewState extends State<PlaygroundView> {
 
   Widget _expansionListBuilder() {
     return SingleChildScrollView(
-      child: ExpansionPanelList(
-        expansionCallback: (int index, bool isExpanded) {
-          setState(() {
-            edgesPerCondition[index]['directed'] = !isExpanded;
-          });
-        },
-        children: edgesPerCondition.map<ExpansionPanel>((vertex) {
-          return ExpansionPanel(
-            headerBuilder: (BuildContext context, bool isExpanded) {
-              return ListTile(
-                title: SelectableText(vertex['to_id']),
-              );
-            },
-            body: ListTile(
-                title: SelectableText(vertex['to_id']),
-                subtitle: const SelectableText(
-                    'To delete this panel, tap the trash can icon'),
-                trailing: const Icon(Icons.delete),
-                onTap: () {
-                  setState(() {
-                    edgesPerCondition
-                        .removeWhere((currentItem) => vertex == currentItem);
-                  });
-                }),
-            isExpanded: vertex['directed'],
-          );
-        }).toList(),
-      ),
+      child: ListView.builder(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(8),
+          itemCount: edgesPerConditionOrCompound.length,
+          itemBuilder: (BuildContext context, int index) {
+            return ExpansionTile(
+              key: Key(index.toString()),
+              title: Text(
+                edgesPerConditionOrCompound[index]['to_id'],
+                style: const TextStyle(color: NodblixStyles.primaryColor),
+              ),
+              backgroundColor: Colors.grey[850],
+              subtitle: Text(
+                _selectedIndex == 0 ? 'Compound' : 'Condition',
+                style: const TextStyle(
+                  color: Colors.white,
+                ),
+              ),
+              children: <Widget>[
+                _isLoadingWikiData
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              NodblixStyles.primaryColor),
+                        ),
+                      )
+                    : (_customTileExpanded)
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10.0),
+                            child: (wikiRespData.isNotEmpty &&
+                                    wikiRespData.entries.length < 7)
+                                ? null
+                                : ListTile(
+                                    leading: wikiRespData.isNotEmpty
+                                        ? CircleAvatar(
+                                            backgroundColor: Colors.white,
+                                            child: wikiRespData.entries
+                                                        .firstWhere((element) =>
+                                                            element.key ==
+                                                            'thumbnail')
+                                                        .value['source'] !=
+                                                    null
+                                                ? Image.network(
+                                                    wikiRespData.entries
+                                                        .firstWhere((element) =>
+                                                            element.key ==
+                                                            'thumbnail')
+                                                        .value['source'],
+                                                    fit: BoxFit.fill,
+                                                    // loadingBuilder: (BuildContext context,
+                                                    //     Widget child,
+                                                    //     ImageChunkEvent? loadingProgress) {
+                                                    //   if (loadingProgress == null) {
+                                                    //     return child;
+                                                    //   }
+                                                    //   return Center(
+                                                    //     child: CircularProgressIndicator(
+                                                    //       value: loadingProgress
+                                                    //                   .expectedTotalBytes !=
+                                                    //               null
+                                                    //           ? loadingProgress
+                                                    //                   .cumulativeBytesLoaded /
+                                                    //               loadingProgress
+                                                    //                   .expectedTotalBytes!
+                                                    //           : null,
+                                                    //     ),
+                                                    //   );
+                                                    // },
+                                                  )
+                                                : const Icon(
+                                                    Icons.image_rounded),
+                                          )
+                                        : null,
+                                    title: SelectableText(
+                                      wikiRespData.isNotEmpty
+                                          ? wikiRespData.entries
+                                                  .firstWhere((element) =>
+                                                      element.key == 'terms')
+                                                  .value['description'][0] ??
+                                              ''
+                                          : 'No description found!',
+                                    ),
+                                    subtitle: SelectableText(
+                                      wikiRespData.isNotEmpty
+                                          ? wikiRespData.entries
+                                                  .firstWhere((element) =>
+                                                      element.key == 'extract')
+                                                  .value ??
+                                              ''
+                                          : 'No extract found!',
+                                    ),
+                                    tileColor: Colors.grey[850],
+                                  ),
+                          )
+                        : Container(),
+              ],
+              onExpansionChanged: (bool expanded) {
+                setState(() => _customTileExpanded = expanded);
+                setState(() {
+                  _isLoadingWikiData = true;
+                  wikiRespData = {};
+                  wikiDataErrMsg = '';
+                });
+                _fetchWikiData(edgesPerConditionOrCompound[index]['to_id']);
+              },
+            );
+          }),
     );
   }
 
@@ -164,7 +295,10 @@ class _PlaygroundViewState extends State<PlaygroundView> {
                           ),
                   onDestinationSelected: (int index) {
                     setState(() {
+                      edgesPerConditionOrCompound.clear();
+                      _textController.clear();
                       _selectedIndex = index;
+                      fetchReqTokenErrorMsg = '';
                     });
                   },
                   labelType: NavigationRailLabelType.selected,
@@ -188,101 +322,145 @@ class _PlaygroundViewState extends State<PlaygroundView> {
                 ),
                 // This is the main content.
                 Expanded(
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(25.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: TextField(
-                                  controller: _textController,
-                                  decoration: InputDecoration(
-                                    hintText: _selectedIndex == 0
-                                        ? 'Enter drug name (ex: Placebo)'
-                                        : 'Enter medical condition (ex: Asthma)',
-                                    border: const OutlineInputBorder(
-                                        borderRadius: BorderRadius.all(
-                                            Radius.circular(8.0))),
-                                    labelText: _selectedIndex == 0
-                                        ? 'Compound'
-                                        : 'Condition',
+                  child: Padding(
+                    padding: const EdgeInsets.all(25.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: TextField(
+                                controller: _textController,
+                                autofocus: true,
+                                onChanged: (value) {
+                                  setState(() {});
+                                },
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    color: Colors.grey[700],
                                   ),
-                                  onSubmitted: (String value) async {
-                                    if (_textController.text.isNotEmpty) {
-                                      _selectedIndex == 0
-                                          ? await _fetchEdgesByCompound(value)
-                                          : await _fetchEdgesByCondition(value);
-                                    } else {
-                                      null;
-                                    }
-                                  },
-                                  // onSubmitted: (String value) async {
-                                  //   await showDialog<void>(
-                                  //     context: context,
-                                  //     builder: (BuildContext context) {
-                                  //       return AlertDialog(
-                                  //         title: const Text('Thanks!'),
-                                  //         content: Text(
-                                  //             'You typed "$value", which has length ${value.characters.length}.'),
-                                  //         actions: <Widget>[
-                                  //           TextButton(
-                                  //             onPressed: () {
-                                  //               Navigator.pop(context);
-                                  //             },
-                                  //             child: const Text('OK'),
-                                  //           ),
-                                  //         ],
-                                  //       );
-                                  //     },
-                                  //   );
-                                  // },
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0),
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    if (_textController.text.isNotEmpty) {
-                                      _selectedIndex == 0
-                                          ? await _fetchEdgesByCompound(
-                                              _textController.text)
-                                          : await _fetchEdgesByCondition(
-                                              _textController.text);
-                                    } else {
-                                      null;
-                                    }
-                                  },
-                                  style: NodblixStyles.buttonStyle,
-                                  icon: Icon(
-                                    FontAwesomeIcons.magnifyingGlass,
-                                    color: Colors.grey[800],
-                                  ),
-                                  label: Text(
-                                    ' Search',
-                                    style: Theme.of(context)
-                                        .primaryTextTheme
-                                        .titleLarge!
-                                        .copyWith(
-                                          color: Colors.grey[800],
-                                          fontWeight: FontWeight.w600,
+                                  suffixIcon: _textController.text.isEmpty
+                                      ? null
+                                      : IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _textController.clear();
+                                              fetchReqTokenErrorMsg = '';
+                                            });
+                                          },
+                                          icon: const Icon(
+                                            Icons.cancel,
+                                            color: Colors.grey,
+                                          ),
                                         ),
-                                  ),
+                                  hintText: _selectedIndex == 0
+                                      ? 'Enter drug name (ex: Placebo)'
+                                      : 'Enter medical condition (ex: Asthma)',
+                                  border: const OutlineInputBorder(
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(8.0))),
+                                  labelText: _selectedIndex == 0
+                                      ? 'Compound'
+                                      : 'Condition',
+                                ),
+                                onSubmitted: (String value) async {
+                                  if (_textController.text.isNotEmpty) {
+                                    setState(() {
+                                      _isLoading = true;
+                                    });
+                                    _selectedIndex == 0
+                                        ? await _fetchEdgesByCompound(value)
+                                        : await _fetchEdgesByCondition(value);
+                                  } else {
+                                    null;
+                                  }
+                                },
+                                // onSubmitted: (String value) async {
+                                //   await showDialog<void>(
+                                //     context: context,
+                                //     builder: (BuildContext context) {
+                                //       return AlertDialog(
+                                //         title: const Text('Thanks!'),
+                                //         content: Text(
+                                //             'You typed "$value", which has length ${value.characters.length}.'),
+                                //         actions: <Widget>[
+                                //           TextButton(
+                                //             onPressed: () {
+                                //               Navigator.pop(context);
+                                //             },
+                                //             child: const Text('OK'),
+                                //           ),
+                                //         ],
+                                //       );
+                                //     },
+                                //   );
+                                // },
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: ElevatedButton(
+                                onPressed: () async {
+                                  if (_textController.text.isNotEmpty) {
+                                    setState(() {
+                                      _isLoading = true;
+                                    });
+                                    _selectedIndex == 0
+                                        ? await _fetchEdgesByCompound(
+                                            _textController.text)
+                                        : await _fetchEdgesByCondition(
+                                            _textController.text);
+                                  } else {
+                                    null;
+                                  }
+                                },
+                                style: NodblixStyles.buttonStyle,
+                                child: Text(
+                                  'Search',
+                                  style: Theme.of(context)
+                                      .primaryTextTheme
+                                      .titleLarge!
+                                      .copyWith(
+                                        color: Colors.grey[800],
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          child: SelectableText(
+                            _selectedIndex == 0
+                                ? 'Associated health conditions: '
+                                : 'Associated drug compounds: ',
+                            textAlign: TextAlign.left,
+                            style:
+                                Theme.of(context).primaryTextTheme.titleMedium,
                           ),
-                          Padding(
-                            padding: const EdgeInsets.all(25.0),
-                            child: Text('selectedIndex: $_selectedIndex'),
-                          ),
-                          Flexible(
-                            child: _expansionListBuilder(),
-                          ),
-                        ],
-                      ),
+                        ),
+                        Flexible(
+                          child: _isLoading
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        NodblixStyles.primaryColor),
+                                  ),
+                                )
+                              : fetchReqTokenErrorMsg.isNotEmpty
+                                  ? Center(
+                                      child: SelectableText(
+                                        fetchReqTokenErrorMsg,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    )
+                                  : _expansionListBuilder(),
+                        ),
+                      ],
                     ),
                   ),
                 )
@@ -290,13 +468,24 @@ class _PlaygroundViewState extends State<PlaygroundView> {
             )
           : Center(
               child: _isFetchingToken
-                  ? const CircularProgressIndicator.adaptive(
+                  ? const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(
                           NodblixStyles.primaryColor),
                     )
-                  : SelectableText(
-                      'Error: Failed to get request token! $fetchReqTokenErrorMsg'),
+                  : _hasError
+                      ? SelectableText(
+                          'Error: Failed to get request token! $fetchReqTokenErrorMsg')
+                      : SelectableText(
+                          'Welcome to the Nodblix Playground!',
+                          style: Theme.of(context).primaryTextTheme.headline4,
+                        ),
             ),
     );
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 }

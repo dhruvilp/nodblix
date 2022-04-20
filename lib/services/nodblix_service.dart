@@ -32,7 +32,7 @@ class HttpService {
   static Future<T?> getWikiJson<T>(String title) {
     return http
         .get(Uri.parse(
-            'https://en.wikipedia.org/w/api.php?action=query&formatversion=2&prop=pageimages%7Cpageterms%7Cextracts&titles=$title&format=json&explaintext=&exchars=1000'))
+            '${CORS_PROXY}https://en.wikipedia.org/w/api.php?action=query&formatversion=2&prop=pageimages%7Cpageterms%7Cextracts&titles=$title&format=json&explaintext=&exchars=1000'))
         .then((response) {
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as T;
@@ -63,7 +63,7 @@ class NodblixService {
     Map<String, dynamic>? respMsg;
     await HttpService.getJson<Map<String, dynamic>>('/echo', kHeader)
         .then((response) {
-      respMsg = !response!['error'] ? response : null;
+      respMsg = !response!['error'] ? response : {};
     }).whenComplete(() => print('Fetching echo done!....'));
     return respMsg;
   }
@@ -71,7 +71,8 @@ class NodblixService {
   static Future<Map<String, dynamic>?> fetchWikiData(String title) async {
     Map<String, dynamic>? wikiInfo;
     await HttpService.getWikiJson<Map<String, dynamic>>(title).then((response) {
-      wikiInfo = response!['batchcomplete'] ? response : null;
+      wikiInfo =
+          response!['batchcomplete'] ? response['query']['pages'][0] : null;
     }).whenComplete(() => print('Fetching wiki info done!....'));
     return wikiInfo;
   }
@@ -89,9 +90,9 @@ class NodblixService {
     return tokenResp;
   }
 
-  static Future<Map<String, dynamic>?> fetchVerticesByCondition(
+  static Future<List<dynamic>> fetchVerticesByCondition(
       String condition, String token) async {
-    Map<String, dynamic>? respMsg;
+    List<dynamic> respMsg = List.empty();
     await HttpService.getJson<Map<String, dynamic>>(
       '/graph/$GRAPH_NAME/edges/condition/$condition/associated_with_a/compound_a',
       {
@@ -100,14 +101,28 @@ class NodblixService {
         HttpHeaders.authorizationHeader: 'Bearer $token',
       },
     ).then((response) {
-      respMsg = !response!['error'] ? response : null;
-    }).whenComplete(() => print('Fetching vertices by condition is done!....'));
+      respMsg = !response!['error'] ? response['results'] : null;
+    }).whenComplete(
+        () => print('1 - Fetching vertices by condition is done!....'));
+
+    await HttpService.getJson<Map<String, dynamic>>(
+      '/graph/$GRAPH_NAME/edges/condition/$condition/associated_with_b/compound_b',
+      {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+      },
+    ).then((response) {
+      !response!['error'] ? respMsg.addAll(response['results']) : null;
+    }).whenComplete(
+        () => print('2 - Fetching vertices by condition is done!....'));
+
     return respMsg;
   }
 
-  static Future<Map<String, dynamic>?> fetchVerticesByCompound(
+  static Future<List<dynamic>> fetchVerticesByCompound(
       String compound, String token) async {
-    Map<String, dynamic>? respMsg;
+    List<dynamic> respMsg = List.empty();
     await HttpService.getJson<Map<String, dynamic>>(
       '/graph/$GRAPH_NAME/edges/compound_a/$compound/associated_with_a/condition',
       {
@@ -116,8 +131,22 @@ class NodblixService {
         HttpHeaders.authorizationHeader: 'Bearer $token',
       },
     ).then((response) {
-      respMsg = !response!['error'] ? response : null;
-    }).whenComplete(() => print('Fetching vertices by compound is done!....'));
+      respMsg = !response!['error'] ? response['results'] : null;
+    }).whenComplete(
+        () => print('1 - Fetching vertices by compound is done!....'));
+
+    await HttpService.getJson<Map<String, dynamic>>(
+      '/graph/$GRAPH_NAME/edges/compound_b/$compound/associated_with_b/condition',
+      {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+      },
+    ).then((response) {
+      !response!['error'] ? respMsg.addAll(response['results']) : null;
+    }).whenComplete(
+        () => print('2 - Fetching vertices by compound is done!....'));
+
     return respMsg;
   }
 }

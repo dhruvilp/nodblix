@@ -52,7 +52,7 @@ class _LandingPageState extends State<LandingPage> {
             children: [
               Center(
                 child: Image.asset(
-                  'app_logo_transparent.png',
+                  'assets/app_logo_transparent.png',
                   width: 300,
                 ),
               ),
@@ -133,21 +133,30 @@ class _LandingPageState extends State<LandingPage> {
                     cardHeader: 'Explore by Condition',
                     cardDescription:
                         'Discover patterns of a medical condition treaded by numerous off label usage of drugs',
-                    imagePath: 'by_condition.png',
+                    imagePath: 'assets/by_condition.png',
                   ),
                   FeatureCard(
                     cardHeader: 'Explore by Drug',
                     cardDescription:
                         'Discover off label usage of drugs to treat many medical conditions effectively',
-                    imagePath: 'by_drug.png',
+                    imagePath: 'assets/by_drug.png',
                   ),
                   FeatureCard(
                     cardHeader: 'Explore by Trial & More',
                     cardDescription:
                         'Discover patterns of how each trials were conducted and associated results',
-                    imagePath: 'by_trial.png',
+                    imagePath: 'assets/by_trial.png',
                   ),
                 ],
+              ),
+              const SizedBox(height: 40.0),
+              SizedBox(
+                width: 800.0,
+                child: SelectableText(
+                  'MEDICAL ADVICE DISCLAIMER: THIS WEBSITE DOES NOT PROVIDE ANY MEDICAL ADVICE. The information, including but not limited to, text, graphics, images and other material contained on this website are for informational purposes only. No material on this site is intended to be a substitute for professional medical advice, diagnosis or treatment. Always seek the advice of your physician or other qualified health care provider with any questions you may have regarding a medical condition or treatment and before undertaking a new health care regimen, and never disregard professional medical advice or delay in seeking it because of something you have read on this website.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
             ],
           ),
@@ -200,7 +209,9 @@ class FeatureCard extends StatelessWidget {
                 ),
               ),
               Image.asset(
-                imagePath.isEmpty ? 'app_logo_transparent.png' : imagePath,
+                imagePath.isEmpty
+                    ? 'assets/app_logo_transparent.png'
+                    : imagePath,
                 height: 250.0,
               ),
             ],

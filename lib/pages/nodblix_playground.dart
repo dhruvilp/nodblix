@@ -12,21 +12,6 @@ class NodblixPlayground extends StatefulWidget {
 }
 
 class _NodblixPlaygroundState extends State<NodblixPlayground> {
-  var _echoMsg = '';
-
-  Future<void> _getEcho() async {
-    try {
-      Map<String, dynamic>? echoMsgResp = await NodblixService.fetchEcho();
-      if (echoMsgResp!.isNotEmpty) {
-        setState(() {
-          _echoMsg = echoMsgResp['message'];
-        });
-      }
-    } catch (e) {
-      print('==== echo error from ui: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +22,7 @@ class _NodblixPlaygroundState extends State<NodblixPlayground> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'app_logo_transparent.png',
+              'assets/app_logo_transparent.png',
               height: 25.0,
             ),
             const Padding(
@@ -48,11 +33,6 @@ class _NodblixPlaygroundState extends State<NodblixPlayground> {
         ),
       ),
       body: const PlaygroundView(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _getEcho,
-        tooltip: 'Echo',
-        child: const Icon(Icons.webhook_sharp),
-      ),
     );
   }
 }
