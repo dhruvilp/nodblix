@@ -104,6 +104,22 @@ class NodblixService {
     }).whenComplete(() => print('Fetching vertices by condition is done!....'));
     return respMsg;
   }
+
+  static Future<Map<String, dynamic>?> fetchVerticesByCompound(
+      String compound, String token) async {
+    Map<String, dynamic>? respMsg;
+    await HttpService.getJson<Map<String, dynamic>>(
+      '/graph/$GRAPH_NAME/edges/compound_a/$compound/associated_with_a/condition',
+      {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+      },
+    ).then((response) {
+      respMsg = !response!['error'] ? response : null;
+    }).whenComplete(() => print('Fetching vertices by compound is done!....'));
+    return respMsg;
+  }
 }
 
 //========================

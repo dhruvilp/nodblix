@@ -63,11 +63,34 @@ class _PlaygroundViewState extends State<PlaygroundView> {
           setState(() {
             edgesPerCondition.addAll(reqResp['results']);
           });
-          debugPrint('==== resp: ${reqResp['results'][8]['to_id']}');
+          // debugPrint('==== resp: ${reqResp['results'][8]['to_id']}');
         }
       }
     } catch (e) {
-      debugPrint('==== echo error from ui: $e');
+      debugPrint('==== echo error from ui - get edges conditions - : $e');
+      setState(() {
+        fetchReqTokenErrorMsg = e.toString();
+      });
+    }
+  }
+
+  //==== fetch edges by a compound
+  Future<void> _fetchEdgesByCompound(String compound) async {
+    try {
+      var token = await getRequestToken();
+      if (token!.isNotEmpty) {
+        Map<String, dynamic>? reqResp =
+            await NodblixService.fetchVerticesByCompound(
+                compound.toLowerCase(), token);
+        if (reqResp!.isNotEmpty) {
+          setState(() {
+            edgesPerCondition.addAll(reqResp['results']);
+          });
+          // debugPrint('==== resp: ${reqResp['results'][8]['to_id']}');
+        }
+      }
+    } catch (e) {
+      debugPrint('==== echo error from ui - get edges compounds - : $e');
       setState(() {
         fetchReqTokenErrorMsg = e.toString();
       });
@@ -104,7 +127,6 @@ class _PlaygroundViewState extends State<PlaygroundView> {
             headerBuilder: (BuildContext context, bool isExpanded) {
               return ListTile(
                 title: SelectableText(vertex['to_id']),
-                selectedColor: Colors.pink,
               );
             },
             body: ListTile(
@@ -189,25 +211,34 @@ class _PlaygroundViewState extends State<PlaygroundView> {
                                         : 'Condition',
                                   ),
                                   onSubmitted: (String value) async {
-                                    await showDialog<void>(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          title: const Text('Thanks!'),
-                                          content: Text(
-                                              'You typed "$value", which has length ${value.characters.length}.'),
-                                          actions: <Widget>[
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                              },
-                                              child: const Text('OK'),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
+                                    if (_textController.text.isNotEmpty) {
+                                      _selectedIndex == 0
+                                          ? await _fetchEdgesByCompound(value)
+                                          : await _fetchEdgesByCondition(value);
+                                    } else {
+                                      null;
+                                    }
                                   },
+                                  // onSubmitted: (String value) async {
+                                  //   await showDialog<void>(
+                                  //     context: context,
+                                  //     builder: (BuildContext context) {
+                                  //       return AlertDialog(
+                                  //         title: const Text('Thanks!'),
+                                  //         content: Text(
+                                  //             'You typed "$value", which has length ${value.characters.length}.'),
+                                  //         actions: <Widget>[
+                                  //           TextButton(
+                                  //             onPressed: () {
+                                  //               Navigator.pop(context);
+                                  //             },
+                                  //             child: const Text('OK'),
+                                  //           ),
+                                  //         ],
+                                  //       );
+                                  //     },
+                                  //   );
+                                  // },
                                 ),
                               ),
                               Padding(
@@ -215,8 +246,11 @@ class _PlaygroundViewState extends State<PlaygroundView> {
                                 child: ElevatedButton.icon(
                                   onPressed: () async {
                                     if (_textController.text.isNotEmpty) {
-                                      await _fetchEdgesByCondition(
-                                          _textController.text);
+                                      _selectedIndex == 0
+                                          ? await _fetchEdgesByCompound(
+                                              _textController.text)
+                                          : await _fetchEdgesByCondition(
+                                              _textController.text);
                                     } else {
                                       null;
                                     }

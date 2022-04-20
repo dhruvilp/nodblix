@@ -1,11 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:nodblix/pages/landing_page.dart';
 import 'package:nodblix/pages/nodblix_playground.dart';
+import 'package:nodblix/services/nodblix_service.dart';
 import 'package:url_strategy/url_strategy.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  const tenMin = Duration(minutes: 10);
+  Timer.periodic(tenMin, (Timer timer) async {
+    await NodblixService.fetchEcho();
+  });
 
   await dotenv.load(fileName: ".env");
   setPathUrlStrategy();
