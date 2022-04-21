@@ -71,6 +71,7 @@ Submission video link:
  - **Data**: CDC Clinical Trial Results online https://clinicaltrials.gov/ct2/results 
  - **Technology Stack**: Tigergraph DB, Flutter, Dart, Python, GSQL 
  - **Visuals**: Feel free to include other images or videos to better demonstrate your work.
+ - **Tigergraph**: https://nodblix.i.tgcloud.io/ (raise a github issue to get access)
  - **Web App Link**: https://nodblix.vercel.app/
  - **Youtube Demo Submission**: https://youtu.be/pHStDnz1_rI
  - **Access to Graph**: Please raise a github **issue** here on Github. We'll grant you a READ_ONLY access to our graph database instance.
